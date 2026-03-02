@@ -64,8 +64,9 @@ def analyze_data():
 
     print("Calculando alertas...")
 
+    # Para testing: analizar solo últimos 2 minutos en lugar de 1 hora
     data = Data.objects.filter(
-        base_time__gte=datetime.now() - timedelta(hours=1))
+        base_time__gte=datetime.now() - timedelta(minutes=2))
     aggregation = data.annotate(check_value=Avg('avg_value')) \
         .select_related('station', 'measurement') \
         .select_related('station__user', 'station__location') \

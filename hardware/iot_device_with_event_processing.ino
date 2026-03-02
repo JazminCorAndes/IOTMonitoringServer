@@ -34,9 +34,9 @@ const int MQTT_PORT = 8082;
 const char MQTT_USER[] = USER;
 const char MQTT_PASS[] = "abc123";
 
-// Tópicos (Igualado a la estructura del Código 1)
-const char MQTT_TOPIC_PUB[] = "pais/estado/ciudad/" USER "/out";
-const char MQTT_TOPIC_SUB[] = "pais/estado/ciudad/" USER "/in";
+// Tópicos (Corregidos para coincidir con datos reales)
+const char MQTT_TOPIC_PUB[] = "colombia/cundinamarca/bogota/" USER "/out";
+const char MQTT_TOPIC_SUB[] = "colombia/cundinamarca/bogota/" USER "/in";
 
 // --- Variables Globales ---
 time_t now;
@@ -82,12 +82,24 @@ void receivedCallback(char* topic, byte* payload, unsigned int length) {
     alertType = "TEMP_HIGH";
     alertTime = millis();
     Serial.println("Alerta: Temperatura alta detectada");
+  }
+  else if (data.indexOf("TEMP_LOW") >= 0) {
+    alert = "TEMP BAJA";
+    alertType = "TEMP_LOW";
+    alertTime = millis();
+    Serial.println("Alerta: Temperatura baja detectada");
   } 
   else if (data.indexOf("HUMIDITY_HIGH") >= 0) {
     alert = "HUMEDAD ALTA";
     alertType = "HUMIDITY_HIGH";
     alertTime = millis();
     Serial.println("Alerta: Humedad alta detectada");
+  }
+  else if (data.indexOf("HUMIDITY_LOW") >= 0) {
+    alert = "HUMEDAD BAJA";
+    alertType = "HUMIDITY_LOW";
+    alertTime = millis();
+    Serial.println("Alerta: Humedad baja detectada");
   }
   else if (data.indexOf("LIGHT_LOW") >= 0) {
     alert = "LUZ BAJA";
@@ -386,8 +398,8 @@ void setup() {
   Serial.println("  - Luminosidad (LDR en pin D15)");
   Serial.println("  - LED de alerta (pin D2)");
   Serial.println("  - Procesamiento de eventos avanzado habilitado");
-  Serial.println("  - Comandos soportados: TEMP_HIGH, HUMIDITY_HIGH, LIGHT_LOW, LIGHT_HIGH,");
-  Serial.println("    ANOMALY, ENERGY_OPTIMIZE, ENVIRONMENTAL_STRESS");
+  Serial.println("  - Comandos soportados: TEMP_HIGH, TEMP_LOW, HUMIDITY_HIGH, HUMIDITY_LOW,");
+  Serial.println("    LIGHT_LOW, LIGHT_HIGH, ANOMALY, ENERGY_OPTIMIZE, ENVIRONMENTAL_STRESS");
   Serial.print("  - Pantalla OLED: ");
   Serial.println(displayAvailable ? "✓ Disponible" : "✗ No disponible");
   Serial.println("================================");
@@ -460,6 +472,20 @@ void loop() {
     } else if (alertType == "HUMIDITY_HIGH") {
       // Parpadeo lento para humedad alta (500ms)
       if (millis() - blinkTime >= 500) {
+        ledState = !ledState;
+        digitalWrite(LEDPIN, ledState);
+        blinkTime = millis();
+      }
+    } else if (alertType == "HUMIDITY_LOW") {
+      // Parpadeo rápido para humedad baja (200ms)
+      if (millis() - blinkTime >= 200) {
+        ledState = !ledState;
+        digitalWrite(LEDPIN, ledState);
+        blinkTime = millis();
+      }
+    } else if (alertType == "TEMP_LOW") {
+      // Parpadeo ultra-rápido para temperatura baja (150ms)
+      if (millis() - blinkTime >= 150) {
         ledState = !ledState;
         digitalWrite(LEDPIN, ledState);
         blinkTime = millis();
