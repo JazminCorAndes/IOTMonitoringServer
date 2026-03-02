@@ -8,6 +8,52 @@ import schedule
 import time
 from django.conf import settings
 
+
+def generate_specific_alert(variable, current_value, min_value, max_value):
+    """
+    Genera comandos específicos de alerta según el tipo de variable y condición
+    que el dispositivo IoT puede interpretar y procesar adecuadamente.
+    """
+    variable_lower = variable.lower()
+    
+    # Alertas específicas por tipo de variable
+    if "temperatura" in variable_lower:
+        if current_value > max_value:
+            return "TEMP_HIGH"
+        elif current_value < min_value:
+            return "TEMP_LOW"  # Agregamos para temperatura baja
+    
+    elif "humedad" in variable_lower:
+        if current_value > max_value:
+            return "HUMIDITY_HIGH"
+        elif current_value < min_value:
+            return "HUMIDITY_LOW"  # Para humedad baja
+    
+    elif "luminosidad" in variable_lower or "luz" in variable_lower:
+        if current_value < min_value:  # Luminosidad baja es más común
+            return "LIGHT_LOW"
+        elif current_value > max_value:
+            return "LIGHT_HIGH"
+    
+    # Detección de anomalías estadísticas
+    value_range = max_value - min_value
+    if value_range > 0:
+        deviation = abs(current_value - (max_value + min_value) / 2)
+        if deviation > value_range * 0.8:  # Desviación mayor al 80% del rango
+            return "ANOMALY"
+    
+    # Alertas de optimización energética
+    if "temperatura" in variable_lower and current_value > max_value * 0.9:
+        return "ENERGY_OPTIMIZE"
+    
+    # Estrés ambiental (múltiples variables fuera de rango)
+    if current_value > max_value * 1.2 or current_value < min_value * 0.8:
+        return "ENVIRONMENTAL_STRESS"
+    
+    # Alerta genérica como fallback
+    return "ALERT {} {} {}".format(variable, min_value, max_value)
+
+
 client = mqtt.Client(settings.MQTT_USER_PUB)
 
 
@@ -33,30 +79,47 @@ def analyze_data():
                 'station__location__state__name',
                 'station__location__country__name')
     alerts = 0
+    normal_conditions = 0
+    
+    # Diccionario para rastrear el estado anterior de las alertas por estación
+    station_alerts = {}
+    
     for item in aggregation:
         alert = False
 
         variable = item["measurement__name"]
         max_value = item["measurement__max_value"] or 0
         min_value = item["measurement__min_value"] or 0
+        current_value = item["check_value"]
 
         country = item['station__location__country__name']
         state = item['station__location__state__name']
         city = item['station__location__city__name']
         user = item['station__user__username']
+        
+        station_key = f"{country}/{state}/{city}/{user}"
+        topic = '{}/{}/{}/{}/in'.format(country, state, city, user)
 
-        if item["check_value"] > max_value or item["check_value"] < min_value:
+        # Verificar si hay condición de alerta
+        if current_value > max_value or current_value < min_value:
             alert = True
-
-        if alert:
-            message = "ALERT {} {} {}".format(variable, min_value, max_value)
-            topic = '{}/{}/{}/{}/in'.format(country, state, city, user)
-            print(datetime.now(), "Sending alert to {} {}".format(topic, variable))
+            # Generar mensaje específico según el tipo de variable y condición
+            message = generate_specific_alert(variable, current_value, min_value, max_value)
+            print(datetime.now(), "Sending alert to {} {}: {}".format(topic, variable, message))
             client.publish(topic, message)
             alerts += 1
+            station_alerts[station_key] = True
+        else:
+            # Condiciones normales - enviar ALERT_OFF si había alerta previa
+            if station_key in station_alerts and station_alerts[station_key]:
+                print(datetime.now(), "Sending ALERT_OFF to {} {}".format(topic, variable))
+                client.publish(topic, "ALERT_OFF")
+                normal_conditions += 1
+            station_alerts[station_key] = False
 
     print(len(aggregation), "dispositivos revisados")
     print(alerts, "alertas enviadas")
+    print(normal_conditions, "alertas desactivadas")
 
 
 def on_connect(client, userdata, flags, rc):

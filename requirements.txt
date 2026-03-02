@@ -1,0 +1,19 @@
+Django==4.0.3
+psycopg2-binary==2.9.3
+paho-mqtt==1.6.1
+requests==2.27.1
+python-dateutil==2.8.2
+schedule==1.2.0
+django-crispy-forms==1.14.0
+crispy-bootstrap4==2022.1
+
+# Para desarrollo y debugging
+python-dotenv==0.20.0
+
+# Notas de instalación:
+# pip install -r requirements.txt
+# 
+# Usuarios de producción deben configurar:
+# - PostgreSQL en la IP especificada en settings.py
+# - Broker MQTT en la IP especificada en settings.py
+# - Variables de entorno para credenciales sensibles
