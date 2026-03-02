@@ -17,7 +17,7 @@ class Command(BaseCommand):
         parser.add_argument('--country', type=str, required=True,
                             help='Country name')
         parser.add_argument('--command', type=str, required=True,
-                            choices=['TEMP_HIGH', 'HUMIDITY_HIGH', 'LIGHT_LOW', 
+                            choices=['TEMP_HIGH', 'HUMIDITY_HIGH', 'LIGHT_LOW', 'LIGHT_HIGH',
                                    'ANOMALY', 'ENERGY_OPTIMIZE', 'ENVIRONMENTAL_STRESS', 
                                    'ALERT_OFF'],
                             help='Command to send to device')

@@ -165,11 +165,12 @@ def setup_mqtt():
 
 def start_cron():
     '''
-    Inicia el cron que se encarga de ejecutar la función analyze_data cada 5 minutos.
+    Inicia el cron que se encarga de ejecutar la función analyze_data cada 3 segundos para testing.
+    En producción cambiar a 5 minutos: schedule.every(5).minutes.do(analyze_data)
     '''
     print("Iniciando cron...")
-    schedule.every(5).minutes.do(analyze_data)
-    print("Servicio de control iniciado")
+    schedule.every(3).seconds.do(analyze_data)  # Cambiado para pruebas ultra-rápidas
+    print("Servicio de control iniciado (análisis cada 3s)")
     while 1:
         schedule.run_pending()
         time.sleep(1)

@@ -95,6 +95,12 @@ void receivedCallback(char* topic, byte* payload, unsigned int length) {
     alertTime = millis();
     Serial.println("Alerta: Luminosidad baja detectada");
   }
+  else if (data.indexOf("LIGHT_HIGH") >= 0) {
+    alert = "LUZ ALTA";
+    alertType = "LIGHT_HIGH";
+    alertTime = millis();
+    Serial.println("Alerta: Luminosidad alta detectada");
+  }
   else if (data.indexOf("ANOMALY") >= 0) {
     alert = "ANOMALIA";
     alertType = "ANOMALY";
@@ -380,7 +386,7 @@ void setup() {
   Serial.println("  - Luminosidad (LDR en pin D15)");
   Serial.println("  - LED de alerta (pin D2)");
   Serial.println("  - Procesamiento de eventos avanzado habilitado");
-  Serial.println("  - Comandos soportados: TEMP_HIGH, HUMIDITY_HIGH, LIGHT_LOW,");
+  Serial.println("  - Comandos soportados: TEMP_HIGH, HUMIDITY_HIGH, LIGHT_LOW, LIGHT_HIGH,");
   Serial.println("    ANOMALY, ENERGY_OPTIMIZE, ENVIRONMENTAL_STRESS");
   Serial.print("  - Pantalla OLED: ");
   Serial.println(displayAvailable ? "✓ Disponible" : "✗ No disponible");
@@ -461,6 +467,13 @@ void loop() {
     } else if (alertType == "LIGHT_LOW") {
       // LED encendido fijo para luminosidad baja
       digitalWrite(LEDPIN, HIGH);
+    } else if (alertType == "LIGHT_HIGH") {
+      // Parpadeo medio para luminosidad alta (350ms)
+      if (millis() - blinkTime >= 350) {
+        ledState = !ledState;
+        digitalWrite(LEDPIN, ledState);
+        blinkTime = millis();
+      }
     } else if (alertType == "ANOMALY") {
       // Doble parpadeo rápido para anomalías estadísticas
       static int flashCount = 0;
